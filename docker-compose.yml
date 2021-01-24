@@ -1,0 +1,12 @@
+version: '2'
+services:
+  engine:
+    build: .
+    environment:
+      - AMENA_INPUT_QUEUE_URL=https://sqs.ap-northeast-1.amazonaws.com/828752933783/amena-input-queue-dev
+      - AMENA_INPUT_BUCKET_NAME=amena-input-image-dev
+      - AMENA_OUTPUT_BUCKET_NAME=amena-output-image-dev
+      - AWS_DEFAULT_REGION=ap-northeast-1
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+    command: python -u main.py --config ../argument.yml
