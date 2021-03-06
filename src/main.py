@@ -79,17 +79,12 @@ def dequeueInputImage():
     img_byte = s3_object.get().get('Body').read()
     img = cv2.imdecode(np.asarray(bytearray(img_byte)), cv2.IMREAD_COLOR)
 
-    sqs.delete_message(
-        QueueUrl=url,
-        ReceiptHandle=receipt_handle
-    )
-
-    s3_object.delete()
-
     return {
         "img": img,
         "account_id": account_id,
         "input_id": queue_id,
+        "s3_object": s3_object,
+        "sqs_receipt_handle": receipt_handle
     }
 
 
@@ -229,3 +224,12 @@ while True:
         )
 
         print(f"Put error log: {s3_error_key}")
+
+    finally:
+        # delete input source
+        sqs.delete_message(
+            QueueUrl=url,
+            ReceiptHandle=dequeued["sqs_receipt_handle"]
+        )
+
+        dequeued["s3_object"].delete()
