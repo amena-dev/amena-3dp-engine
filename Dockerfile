@@ -32,9 +32,12 @@ RUN pip install pyyaml
 RUN pip install boto3
 
 WORKDIR /src
-COPY argument.yml /
+COPY src/MiDaS /src/MiDaS
 COPY download.sh /
-COPY src /src
-
 RUN ../download.sh
-CMD xvfb-run python main.py --config ../argument.yml
+
+COPY argument.yml /
+COPY src /src
+COPY run.sh /
+
+CMD xvfb-run /opt/conda/bin/python -u main.py --config ../argument.yml
