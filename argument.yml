@@ -3,7 +3,7 @@ depth_feat_model_ckpt: checkpoints/depth-model.pth
 rgb_feat_model_ckpt: checkpoints/color-model.pth
 MiDaS_model_ckpt: MiDaS/model.pt
 fps: 30
-num_frames: 300
+num_frames: 150
 x_shift_range: [0.01]
 y_shift_range: [0.01]
 z_shift_range: [-0.05]
