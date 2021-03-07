@@ -37,7 +37,7 @@ COPY download.sh /
 RUN ../download.sh
 
 COPY argument.yml /
+COPY readiness-probe.sh /
 COPY src /src
-COPY run.sh /
 
 CMD xvfb-run /opt/conda/bin/python -u main.py --config ../argument.yml
