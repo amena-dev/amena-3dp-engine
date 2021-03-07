@@ -60,7 +60,7 @@ def dequeueInputImage():
         received_queues = sqs.receive_message(
             QueueUrl=url,
             MaxNumberOfMessages=1,
-            VisibilityTimeout=0,
+            VisibilityTimeout=5,
             WaitTimeSeconds=dequeue_wait_time
         )
         if "Messages" in received_queues:
@@ -88,20 +88,35 @@ def dequeueInputImage():
     }
 
 
-
 while True:
     # Clear work folders.
-    shutil.rmtree(config['src_folder'])
-    shutil.rmtree(config['video_folder'])
-    shutil.rmtree(config['depth_folder'])
-    shutil.rmtree(config['mesh_folder'])
+    if os.path.exists(config['src_folder']):
+        shutil.rmtree(config['src_folder'])
+    if os.path.exists(config['video_folder']):
+        shutil.rmtree(config['video_folder'])
+    if os.path.exists(config['depth_folder']):
+        shutil.rmtree(config['depth_folder'])
+    if os.path.exists(config['mesh_folder']):
+        shutil.rmtree(config['mesh_folder'])
+
     os.mkdir(config['src_folder'])
     os.mkdir(config['video_folder'])
     os.mkdir(config['depth_folder'])
     os.mkdir(config['mesh_folder'])
 
     # Dequeue request from sqs
-    dequeued = dequeueInputImage()
+    # if failed, continue next
+    try:
+        dequeued = dequeueInputImage()
+    except Exception as e:
+        continue
+
+    sqs.change_message_visibility(
+        QueueUrl=url,
+        ReceiptHandle=dequeued["sqs_receipt_handle"],
+        VisibilityTimeout=900
+    )
+
     src_path = local_input_image_path.replace("{account_id}", dequeued["account_id"]).replace("{input_id}", dequeued["input_id"])
     cv2.imwrite(src_path, dequeued["img"])
     print(f"Dequeued: {src_path}")
