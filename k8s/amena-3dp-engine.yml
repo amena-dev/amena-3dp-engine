@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: amena-3dp-engine
+spec:
+  selector:
+    matchLabels:
+      app: amena-3dp-engine
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: amena-3dp-engine
+    spec:
+      nodeSelector:
+        nodeGroup: ai-engine
+      containers:
+      - name: amena-3dp-engine
+        image: 828752933783.dkr.ecr.ap-northeast-1.amazonaws.com/amena-3dp-engine:0.0.35
+        env:
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: aws
+                key: access_key
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: aws
+                key: secret_access_key
+          - name: AMENA_INPUT_QUEUE_URL
+            value: https://sqs.ap-northeast-1.amazonaws.com/828752933783/amena-analysis-queue
+          - name: AMENA_INPUT_BUCKET_NAME
+            value: amena-input-image
+          - name: AMENA_OUTPUT_BUCKET_NAME
+            value: amena-output-image
+          - name: AWS_DEFAULT_REGION
+            value: ap-northeast-1
+        command: ["sh", "-c", "cd /src && xvfb-run /opt/conda/bin/python -u main.py --config ../argument.yml"]
+        resources:
+          # limits:
+            # nvidia.com/gpu: 1
+            # memory: "30Gi"
+          requests:
+            memory: "7Gi"
+        readinessProbe:
+            exec:
+              command:
+              - /readiness-probe.sh
+            periodSeconds: 1
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: keda-trigger-auth-aws-credentials
+spec:
+  secretTargetRef:
+  - parameter: awsAccessKeyID
+    name: aws
+    key: access_key
+  - parameter: awsSecretAccessKey
+    name: aws
+    key: secret_access_key
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: aws-sqs-queue-scaledobject
+spec:
+  scaleTargetRef:
+    name: amena-3dp-engine
+  triggers:
+  - type: aws-sqs-queue
+    authenticationRef:
+      name: keda-trigger-auth-aws-credentials
+    metadata:
+      queueURL: https://sqs.ap-northeast-1.amazonaws.com/828752933783/amena-analysis-queue
+      queueLength: "1"
+      awsRegion: "ap-northeast-1"
+  maxReplicaCount: 10
+  minReplicaCount: 2
+  pollingInterval: 1
+  cooldownPeriod: 1
