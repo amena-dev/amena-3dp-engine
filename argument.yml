@@ -23,7 +23,7 @@ video_folder: output
 load_ply: False
 save_ply: True
 inference_video: True
-gpu_ids: 0
+gpu_ids:
 offscreen_rendering: False
 img_format: '.jpg'
 depth_format: '.npy'
